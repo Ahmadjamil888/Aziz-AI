@@ -1,6 +1,6 @@
 # AZIZ AI - Human-like Voice Assistant 🤖🎙️
 
-![AZIZ AI Demo](demo.gif) *(Replace with actual demo gif)*
+![AZIZ AI Demo](https://raw.githubusercontent.com/Ahmadjamil888/Aziz-AI/refs/heads/main/Screenshot%20(42).png) 
 
 AZIZ AI is an advanced voice assistant with ultra-natural human-like responses, featuring fluid conversation, emotional tone variations, and intelligent pause patterns for the most realistic AI interaction experience.
 
