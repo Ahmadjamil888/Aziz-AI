@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AZIZ AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            position: relative;
+        }
+
+        .status-text {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #4fc3f7;
+            height: 24px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .status-text.show {
+            opacity: 1;
+        }
+
+        .response-area {
+            max-width: 80%;
+            margin: 30px auto;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: rgba(15, 15, 15, 0.9);
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .response-area.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .voice-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0077ff, #00a8ff);
+            border: none;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(0, 168, 255, 0.5);
+            transition: all 0.3s ease;
+            outline: none;
+            margin-top: 20px;
+        }
+
+        .voice-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 168, 255, 0.7);
+        }
+
+        .voice-btn.listening {
+            animation: pulse 1.5s infinite;
+            background: linear-gradient(135deg, #0077ff, #00a8ff);
+        }
+
+        .voice-btn .inner-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+        }
+
+        .voice-btn.listening .inner-circle {
+            animation: innerPulse 1.5s infinite;
+        }
+
+        .stop-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #000, #333);
+            border: 2px solid #fff;
+            cursor: pointer;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .stop-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .stop-btn::before {
+            content: '';
+            width: 15px;
+            height: 15px;
+            background-color: #fff;
+            border-radius: 2px;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 168, 255, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 15px rgba(0, 168, 255, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 168, 255, 0);
+            }
+        }
+
+        @keyframes innerPulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.9;
+            }
+            50% {
+                transform: scale(0.8);
+                opacity: 0.6;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0.9;
+            }
+        }
+
+        .typing {
+            display: inline-block;
+        }
+
+        .typing-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #4fc3f7;
+            margin: 0 2px;
+            opacity: 0;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingAnimation {
+            0% {
+                opacity: 0.2;
+                transform: translateY(0);
+            }
+            50% {
+                opacity: 1;
+                transform: translateY(-5px);
+            }
+            100% {
+                opacity: 0.2;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">AZIZ AI</div>
+        <div class="response-area" id="responseArea"></div>
+        <div class="status-text" id="statusText"></div>
+        <button class="voice-btn" id="voiceBtn">
+            <div class="inner-circle"></div>
+        </button>
+        <button class="stop-btn" id="stopBtn"></button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const voiceBtn = document.getElementById('voiceBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const statusText = document.getElementById('statusText');
+            const responseArea = document.getElementById('responseArea');
+            
+            let recognition;
+            let isListening = false;
+            let finalTranscript = '';
+            let apiKey = 'AIzaSyAkNX0vkchLXxxfmlIL6kAhPmisKIArF6Q';
+            let apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
+            let synth = window.speechSynthesis;
+
+            // Check for browser support
+            if (!('webkitSpeechRecognition' in window)) {
+                statusText.textContent = 'Speech recognition not supported in your browser';
+                statusText.classList.add('show');
+                voiceBtn.disabled = true;
+            } else {
+                recognition = new webkitSpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.lang = 'en-US';
+
+                recognition.onstart = function() {
+                    isListening = true;
+                    voiceBtn.classList.add('listening');
+                    statusText.textContent = 'Listening...';
+                    statusText.classList.add('show');
+                    stopBtn.style.display = 'flex';
+                };
+
+                recognition.onerror = function(event) {
+                    console.error('Recognition error', event.error);
+                    stopListening();
+                    statusText.textContent = 'Error occurred. Please try again.';
+                    setTimeout(() => {
+                        statusText.classList.remove('show');
+                    }, 2000);
+                };
+
+                recognition.onend = function() {
+                    if (isListening) {
+                        recognition.start();
+                    }
+                };
+
+                recognition.onresult = function(event) {
+                    let interimTranscript = '';
+                    
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript;
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+                    
+                    if (interimTranscript) {
+                        statusText.textContent = interimTranscript;
+                    }
+                    
+                    if (finalTranscript) {
+                        stopListening();
+                        processQuery(finalTranscript);
+                        finalTranscript = '';
+                    }
+                };
+            }
+
+            voiceBtn.addEventListener('click', function() {
+                if (!isListening) {
+                    startListening();
+                }
+            });
+
+            stopBtn.addEventListener('click', function() {
+                stopListening();
+            });
+
+            function startListening() {
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.error('Error starting recognition:', error);
+                    statusText.textContent = 'Error starting microphone';
+                    statusText.classList.add('show');
+                    setTimeout(() => {
+                        statusText.classList.remove('show');
+                    }, 2000);
+                }
+            }
+
+            function stopListening() {
+                isListening = false;
+                recognition.stop();
+                voiceBtn.classList.remove('listening');
+                statusText.classList.remove('show');
+                stopBtn.style.display = 'none';
+            }
+
+            function speak(text) {
+                if (synth.speaking) {
+                    synth.cancel();
+                }
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.voice = synth.getVoices().find(voice => voice.name.includes('English'));
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
+                utterance.volume = 1;
+                
+                synth.speak(utterance);
+            }
+
+            function processQuery(query) {
+                statusText.textContent = 'AZIZ is thinking...';
+                statusText.classList.add('show');
+                
+                // Show typing indicator
+                responseArea.innerHTML = '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+                responseArea.classList.add('show');
+                
+                // Call Gemini API
+                fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `Respond as AZIZ AI, a friendly and helpful AI assistant. Use a conversational tone with natural pauses. Answer questions directly and clearly. For example, if asked "What is the capital of Russia?", respond with "The capital of Russia is Moscow." The user said: ${query}`
+                            }]
+                        }]
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    statusText.classList.remove('show');
+                    
+                    if (data.candidates && data.candidates[0].content.parts[0].text) {
+                        const responseText = data.candidates[0].content.parts[0].text;
+                        typeResponse(responseText);
+                        speak(responseText); // Speak the response
+                    } else {
+                        const errorMessage = "Hmm... I couldn't process that. Could you try again?";
+                        responseArea.textContent = errorMessage;
+                        speak(errorMessage);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const errorMessage = "Oops... something went wrong. Let's try that again.";
+                    responseArea.textContent = errorMessage;
+                    speak(errorMessage);
+                    statusText.classList.remove('show');
+                });
+            }
+
+            function typeResponse(text) {
+                responseArea.innerHTML = '';
+                let i = 0;
+                const speed = 20; // typing speed in ms
+                
+                function typeWriter() {
+                    if (i < text.length) {
+                        // Create a span for the current character
+                        const charSpan = document.createElement('span');
+                        charSpan.textContent = text.charAt(i);
+                        responseArea.appendChild(charSpan);
+                        
+                        // Scroll to bottom
+                        responseArea.scrollTop = responseArea.scrollHeight;
+                        
+                        i++;
+                        setTimeout(typeWriter, speed);
+                    }
+                }
+                
+                typeWriter();
+            }
+
+            // Initialize with welcome message after a delay
+            setTimeout(() => {
+                const welcomeMessage = "Hello there... I'm AZIZ AI. How can I help you today?";
+                responseArea.textContent = welcomeMessage;
+                responseArea.classList.add('show');
+                speak(welcomeMessage);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
